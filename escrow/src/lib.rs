@@ -883,6 +883,8 @@ pub enum EscrowError {
     PausedBlocksWithdrawal = 212,
     /// [`StarfundEscrow::claim_investor_payout`] blocked while operational pause is active.
     PausedBlocksInvestorClaims = 213,
+    /// [`StarfundEscrow::set_paused`] attempted to clear a pause with a non-matching scope.
+    PauseScopeMismatch = 214,
 
     /// [`StarfundEscrow::init`] rejected `protocol_fee_bps` outside `0..=10_000`.
     ProtocolFeeBpsOutOfRange = 215,
@@ -1390,6 +1392,9 @@ pub enum DataKey {
     /// Used by [`StarfundEscrow::sweep_terminal_dust`] to compute outstanding liabilities:
     /// `outstanding = funded_amount - distributed_principal`.
     DistributedPrincipal,
+    /// Running total of principal released to the SME via [`StarfundEscrow::release`].
+    /// Absent ⇒ `0`; used to enforce that cumulative releases do not exceed funded principal.
+    ReleasedAmount,
     /// Configured maximum maturity horizon in seconds from current ledger time.
     /// Absent ΓçÆ falls back to [`DEFAULT_MATURITY_MAX_HORIZON_SECS`].
     /// Set at init and updatable via [`StarfundEscrow::update_maturity_max_horizon`].
@@ -1428,6 +1433,9 @@ pub enum DataKey {
     /// [`DataKey::PauseMaxDurationSecs`] to compute auto-expiry. Absent ⇒ pause was never
     /// activated.
     PausedAt,
+    /// Persisted typed scope and reason for the active operational pause.
+    /// Absent ⇒ no typed pause state is recorded (including legacy global pauses).
+    PauseState,
     /// Optional cap on the number of [`StarfundEscrow::set_paused`] calls allowed within
     /// [`DataKey::PauseToggleWindowSecs`]. Absent ⇒ `0` (unlimited), identical to pre-existing
     /// behavior. Set via [`StarfundEscrow::set_pause_rate_limit`].
@@ -1451,6 +1459,9 @@ pub enum DataKey {
     /// Monotonically increasing invocation nonce counter for cross-contract callbacks.
     /// Absent ⇒ `0`. Incremented on each callback registration.
     CallbackNonce,
+    /// Monotonically increasing nonce for replay protection on dual-auth admin entrypoints.
+    /// Absent ⇒ `0`, preserving backward compatibility for legacy deployments.
+    AdminNonce,
     /// Stored cross-contract callback context ([`CallbackContext`]) keyed by invocation nonce.
     /// Binds expected origin address, invocation nonce, and lifecycle phase.
     CallbackContext(u64),
