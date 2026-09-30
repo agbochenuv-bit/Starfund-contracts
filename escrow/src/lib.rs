@@ -856,7 +856,7 @@ pub enum EscrowError {
     /// [`validate_maturity_bounds`] rejected a maturity timestamp beyond the configured horizon.
     MaturityExceedsMaxHorizon = 167,
     /// [`StarfundEscrow::revoke_attestation_digest`] called on a non-revoked index.
-    AttestationNotRevoked = 168,
+    AttestationDigestNotRevoked = 252,
     /// [`StarfundEscrow::update_funding_deadline`] called while escrow is not open.
     FundingDeadlineUpdateNotOpen = 169,
     /// [`StarfundEscrow::claim_investor_payout`] computed a zero payout.
