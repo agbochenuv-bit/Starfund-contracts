@@ -30,6 +30,7 @@ fn typed_error_codes_cover_basic_escrow_guards() {
     let env = Env::default();
     let (client, admin, sme) = setup(&env);
     let (funding_token, treasury) = free_addresses(&env);
+}
 
 #[test]
 fn typed_error_codes_cover_init_fund_settle_withdraw_and_claim() {
@@ -1647,6 +1648,79 @@ fn test_bump_ttl_covers_persistent_investor_keys() {
     // assert!(ttl_allow > 0, "Allowlist TTL should be extended");
     //     let ttl_contrib = env.storage().persistent().get_ttl(&DataKey::InvestorContribution(investor.clone()));
     // assert!(ttl_contrib > 0, "Contribution TTL should be extended");
+}
+
+#[test]
+fn test_bump_ttl_allows_allowlisted_unfunded_investor() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, admin, sme) = setup(&env);
+    let investor = Address::generate(&env);
+    let (funding_token, treasury) = free_addresses(&env);
+
+    client.init(
+        &admin,
+        &soroban_sdk::String::from_str(&env, "TTL002"),
+        &sme,
+        &100,
+        &10,
+        &0,
+        &funding_token,
+        &None,
+        &treasury,
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
+    );
+    client.set_investor_allowlisted(&investor, &true, &0u32);
+
+    let mut investors = SorobanVec::new(&env);
+    investors.push_back(investor.clone());
+    client.bump_ttl(&investors);
+
+    assert_eq!(client.get_investor_claim_not_before(&investor), 0u64);
+}
+
+#[test]
+fn test_batch_bump_ttl_handles_missing_persistent_keys() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, admin, sme) = setup(&env);
+    let investor = Address::generate(&env);
+    let (funding_token, treasury) = free_addresses(&env);
+
+    client.init(
+        &admin,
+        &soroban_sdk::String::from_str(&env, "TTL003"),
+        &sme,
+        &100,
+        &10,
+        &0,
+        &funding_token,
+        &None,
+        &treasury,
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
+    );
+    client.set_investor_allowlisted(&investor, &true, &0u32);
+
+    let mut keys = SorobanVec::new(&env);
+    keys.push_back(DataKey::Escrow);
+    keys.push_back(DataKey::InvestorAllowlisted(investor.clone()));
+    keys.push_back(DataKey::InvestorContribution(investor.clone()));
+    keys.push_back(DataKey::InvestorClaimNotBefore(investor.clone()));
+
+    client.batch_bump_ttl(&keys);
+    assert_eq!(client.get_investor_claim_not_before(&investor), 0u64);
 }
 
 #[test]
