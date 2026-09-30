@@ -841,12 +841,12 @@ pub enum EscrowError {
 
     /// Attempted to accept admin role when no pending admin exists.
     /// @dev Historical note: Prior to PR #XYZ, this shared discriminant 163 with `FundingDeadlinePassed`.
-    /// Reassigned to 81 to maintain uniqueness within the admin-handover range.
-    NoPendingAdmin = 81,
+    /// Assigned to 256 to maintain uniqueness within the admin-handover range.
+    NoPendingAdmin = 256,
     /// Admin-nonce replay protection: the supplied nonce does not match the current expected nonce.
     /// Returned for stale (old), duplicate (same), or future (out-of-sequence) nonces.
     /// Does not leak which specific mismatch occurred to avoid giving attackers information.
-    AdminNonceMismatch = 85,
+    AdminNonceMismatch = 257,
     /// The contract's funding-token balance is less than `funded_amount` at withdraw time.
     /// Funds must be custodied in this contract before the SME can pull them.
     InsufficientContractBalance = 165,
@@ -873,7 +873,7 @@ pub enum EscrowError {
     /// Inbound token transfer detected recipient balance delta underflow.
     InboundRecipientBalanceUnderflow = 175,
     /// Inbound token transfer detected recipient received amount differs from requested transfer.
-    InboundRecipientBalanceDeltaMismatch = 176,
+    InboundRecipientBalanceDeltaMismatch = 258,
 
     /// [`StarfundEscrow::fund`] blocked while operational pause is active.
     PausedBlocksFunding = 210,
@@ -1951,6 +1951,28 @@ pub struct CallbackContext {
 }
 
 // --- Events ---
+
+#[contractevent]
+pub struct CallbackRegisteredEvent {
+    #[topic]
+    pub name: Symbol,
+    #[topic]
+    pub invoice_id: Symbol,
+    pub origin: Address,
+    pub nonce: u64,
+    pub phase: u32,
+}
+
+#[contractevent]
+pub struct CallbackExecutedEvent {
+    #[topic]
+    pub name: Symbol,
+    #[topic]
+    pub invoice_id: Symbol,
+    pub origin: Address,
+    pub nonce: u64,
+    pub phase: u32,
+}
 
 #[contractevent]
 pub struct EscrowInitialized {
